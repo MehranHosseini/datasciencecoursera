@@ -1,0 +1,113 @@
+
+#### Load the data
+```{r}
+setwd('C:/')
+data <- read.csv("activity.csv", stringsAsFactors = FALSE)
+str(data)
+```
+
+#### Convert date variable to proper date format
+```{r}
+data$date <- as.Date(data$date)
+str(data)
+```
+
+####  What is mean total number of steps taken per day?
+
+##### step 1: create a dataset without missing vallue
+```{r}
+data_no_missing<-data[which(!is.na(data$steps)),]
+```
+
+##### step 2: agrregate steps measured in 5-minute intervals to have total per day
+```{r}
+dailysteps<-tapply(data_no_missing$steps, data_no_missing$date, sum)
+```
+
+##### step 3: make a historgram of steps per day
+```{r}
+hist(dailysteps,10, main = "# of steps per day", xlab = "")
+```
+
+##### step 4: calculate mean and median of number of steps per day
+```{r}
+mean(dailysteps)
+median(dailysteps)
+```
+
+#### What is the average daily activity pattern?
+```{r}
+dailypattern<-tapply(data_no_missing$steps, data_no_missing$interval, mean)
+plot(y = dailypattern, x = names(dailypattern), type = "l", xlab = "5-Minute Interval", 
+    main = "Daily Activity Pattern", ylab = "Average # of steps")
+```
+
+#### Inputing missing values
+
+```{r}
+sum(is.na(data$steps))
+sum(is.na(data))
+```
+###### number of missing values in the dataset and the steps column is the same which indicates there is no missing value elswhere.
+
+###### we fill in the missing values with mean value
+```{r}
+newdata <- data
+newdata[which(is.na(newdata$steps)),1]<-dailypattern[as.character(newdata[which(is.na(newdata$steps)),3])]
+sum(is.na(newdata))
+```
+
+###### make histograms based on original data and data with imputed missing values by median value
+```{r}
+newdailysteps<-tapply(newdata$steps, newdata$date, sum)
+
+par(mfrow=c(1,2))
+hist(dailysteps,10, main = "Total number of steps taken per day", xlab = "Steps"
+     , ylim =c(0, 25))
+abline(v = median(dailysteps), col = 4, lwd = 4)
+
+hist(newdailysteps,10, main = "Total number of steps taken per day  
+     (missing values replaced with mean of interval)", xlab = "Steps",
+     ylim =c(0, 25))
+abline(v = median(newdailysteps), col = 4, lwd = 4)
+```
+
+###### calculate mean and median of the new dataset
+```{r}
+mean(newdailysteps)
+median(newdailysteps)
+```
+
+#### Are there differences in activity patterns between weekdays and weekends?
+
+###### create a factor variable with two levels, weekdays and weekend 
+```{r}
+newdata$weekday<-weekdays(newdata$date)
+newdata$factorweekday<- as.factor(c("weekend", "weekday"))
+newdata[newdata$weekday == "Sunday" | newdata$weekday == "Saturday" ,5]<- factor("weekend")
+newdata[!(newdata$weekday == "Sunday" | newdata$weekday == "Saturday"),5 ]<- factor("weekday")
+```
+
+###### create two datasets, one for weekdays and one for weekends, aggregated steps by day
+```{r}
+newdata_weekend <- subset(newdata, factorweekday == "weekend") 
+newdata_weekday <- subset(newdata, factorweekday == "weekday") 
+dailysteps_weekend<-tapply(newdata_weekend$steps, newdata_weekend$interval, mean)
+dailysteps_weekday<-tapply(newdata_weekday$steps, newdata_weekday$interval, mean)
+
+par(mfrow=c(2,1))
+
+plot(y = dailysteps_weekday, x = names(dailysteps_weekday), type = "l", xlab = "5-Minute Interval", 
+     main = "Daily Activity Pattern on Weekdays", ylab = "Average number of steps", 
+     ylim =c(0, 250))
+     
+plot(y = dailysteps_weekend, x = names(dailysteps_weekend), type = "l", xlab = "5-Minute Interval", 
+     main = "Daily Activity Pattern on Weekends", ylab = "Average number of steps", 
+     ylim =c(0, 250))
+```
+
+###### conclusion: there are differences in activity patterns between weekdays and weekends: people seem to wake up at least one hour later at the weekends, number of steps are much highers on weekdays compared to weekend specially on the first half of day. Distribution of steps on weekends are more even compared to weekend.
+
+
+
+
